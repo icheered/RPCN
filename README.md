@@ -1,4 +1,6 @@
 # RPCN Assignments
+This Python project uses BagPy to read .bag files. Documentation can be found here: https://jmscslgroup.github.io/bagpy/getting_started.html
+
 ### Installation
 I use Poetry for python dependency management and virtual environment stuff. You can install it here: https://python-poetry.org/ 
 
