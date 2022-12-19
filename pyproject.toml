@@ -8,6 +8,7 @@ authors = ["ICheered <tjeerd992@gmail.com>"]
 python = "^3.9"
 rosbags = "^0.9.13"
 bagpy = "^0.5"
+ipympl = "^0.9.2"
 
 [tool.poetry.dev-dependencies]
 ipykernel = "^6.19.2"
