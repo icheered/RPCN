@@ -1,40 +1,55 @@
-# Initialize variables for integration
-prev_time = None
-positions = []
-velocities = []
+from math import sin, cos
 
-# Loop through each data point
-for data in imu_data:
-    # Extract time, acceleration, and gyroscope data
-    time = data["time"]
-    acceleration = data["acceleration"]
-    gyro = data["gyro"]
+def integrate_imu_data(imu_data, dt):
+    positions = []
+    velocities = []
+    orientations = []
 
-    # If this is the first data point, just add it to the positions and velocities lists
-    # and set the previous time to the current time
-    if prev_time is None:
-        positions.append((acceleration["x"], acceleration["y"], acceleration["z"]))
-        velocities.append((gyro["x"], gyro["y"], gyro["z"]))
+    prev_time = 0
+    prev_orientation = (0, 0, 0)  # roll, pitch, yaw
+    prev_velocity = (0, 0, 0)  # x, y, z
+    prev_position = (0, 0, 0)  # x, y, z
+
+    for data in imu_data:
+        time = data["time"]
+        acceleration = data["acceleration"]
+        gyro = data["gyro"]
+
+        # Calculate the elapsed time since the last data point
+        elapsed_time = time - prev_time
+
+        # Integrate the gyroscope data to get the orientation
+        roll = prev_orientation[0] + gyro["x"] * elapsed_time
+        pitch = prev_orientation[1] + gyro["y"] * elapsed_time
+        yaw = prev_orientation[2] + gyro["z"] * elapsed_time
+        orientation = (roll, pitch, yaw)
+
+        # Rotate the acceleration vector by the current orientation to
+        # get the acceleration in the global frame
+        x_accel = acceleration["x"] * cos(pitch) + acceleration["z"] * sin(pitch)
+        y_accel = acceleration["x"] * sin(roll) * sin(pitch) + acceleration["y"] * cos(roll) - acceleration["z"] * sin(roll) * cos(pitch)
+        z_accel = -acceleration["x"] * cos(roll) * sin(pitch) + acceleration["y"] * sin(roll) + acceleration["z"] * cos(roll) * cos(pitch)
+        rotated_acceleration = (x_accel, y_accel, z_accel)
+
+        # Integrate the acceleration to get the velocity
+        x_velocity = prev_velocity[0] + rotated_acceleration[0] * elapsed_time
+        y_velocity = prev_velocity[1] + rotated_acceleration[1] * elapsed_time
+        z_velocity = prev_velocity[2] + rotated_acceleration[2] * elapsed_time
+        velocity = (x_velocity, y_velocity, z_velocity)
+
+        # Integrate the velocity to get the position
+        x_position = prev_position[0] + x_velocity * elapsed_time
+        y_position = prev_position[1] + y_velocity * elapsed_time
+        z_position = prev_position[2] + z_velocity * elapsed_time
+        position = (x_position, y_position, z_position)
+
+        positions.append(position)
+        velocities.append(velocity)
+        orientations.append(orientation)
+
         prev_time = time
-        continue
+        prev_orientation = orientation
+        prev_velocity = velocity
+        prev_position = position
 
-    # Calculate the time difference between the current data point and the previous one
-    dt = time - prev_time
-
-    # Use the acceleration and gyroscope data to update the position and velocity
-    # using the formulas:
-    # position = position + velocity * dt + 0.5 * acceleration * dt^2
-    # velocity = velocity + acceleration * dt
-    x = positions[-1][0] + velocities[-1][0] * dt + 0.5 * acceleration["x"] * dt**2
-    y = positions[-1][1] + velocities[-1][1] * dt + 0.5 * acceleration["y"] * dt**2
-    z = positions[-1][2] + velocities[-1][2] * dt + 0.5 * acceleration["z"] * dt**2
-    positions.append((x, y, z))
-    vx = velocities[-1][0] + acceleration["x"] * dt
-    vy = velocities[-1][1] + acceleration["y"] * dt
-    vz = velocities[-1][2] + acceleration["z"] * dt
-    velocities.append((vx, vy, vz))
-
-    # Set the previous time to the current time for the next iteration
-    prev_time = time
-
-# Now you can plot the positions to visualize the 3D trajectory
+    return positions, velocities, orientations
