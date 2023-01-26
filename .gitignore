@@ -1,4 +1,7 @@
 __pycache__/
 .vs/
 .venv/
+.vscode/
 **.bag
+Pipfile
+Pipfile.lock
